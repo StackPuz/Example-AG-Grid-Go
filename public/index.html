@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+</head>
+<body>
+    <div id="grid" class="ag-theme-alpine" style="height: 400px; width: 640px; margin: 1em"></div>
+    <script>
+        function getQuery(params) {
+            let query = new URLSearchParams()
+            let size = params.endRow - params.startRow
+            let page = Math.floor(params.startRow / size) + 1
+            query.append('page', page)
+            query.append('size', size)
+            if (params.sortModel.length) {
+                let sort = params.sortModel[0]
+                query.append('order', sort.colId)
+                query.append('direction', sort.sort)
+            }
+            if (params.filterModel.Name) {
+                query.append('search', params.filterModel.Name.filter)
+            }
+            return query.toString()
+        }
+        let columns = [
+            { headerName: 'ID', field: 'Id', sortable: true },
+            {
+                headerName: 'Name', field: 'Name', sortable: true, filter: true,
+                filterParams: {
+                    filterOptions: ['contains'],
+                    maxNumConditions: 1,
+                }
+            },
+            { headerName: 'Price', field: 'Price', sortable: true }
+        ]
+        let gridOptions = {
+            columnDefs: columns,
+            rowModelType: 'infinite',
+            pagination: true,
+            paginationPageSize: 20,
+            cacheBlockSize: 20,
+            datasource: {
+                getRows: function (params) {
+                    let query = getQuery(params)
+                    fetch(`/api/products?${query}`)
+                        .then(response => response.json())
+                        .then(json => {
+                            params.successCallback(json.data, json.count)
+                        })
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            agGrid.createGrid(document.querySelector('#grid'), gridOptions)
+        })
+    </script>
+</body>
+</html>
